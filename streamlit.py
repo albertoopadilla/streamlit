@@ -28,8 +28,8 @@ def run_forecast_pipeline(input_path: str, output_path: str) -> None:
     import numpy as np
     import openpyxl
     from scipy.stats import norm, gamma, kstest
-    from statsmodels.tsa.statespace.sarimax import SARIMAX
-    import pmdarima as pm
+    #from statsmodels.tsa.statespace.sarimax import SARIMAX
+    #import pmdarima as pm
     from xgboost import XGBRegressor
     from sklearn.model_selection import TimeSeriesSplit, GridSearchCV
     from sklearn.metrics import mean_squared_error, mean_absolute_error
