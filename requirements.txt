@@ -9,5 +9,4 @@ xgboost==2.0.0
 openpyxl==3.1.5
 scipy>=1.9.0
 #statsmodels>=0.15.0
-sklearn >=1.6.1
 
