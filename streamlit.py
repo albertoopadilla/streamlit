@@ -18,6 +18,8 @@ import matplotlib.pyplot as plt
 import openpyxl
 import xgboost as xgb
 #import pmdarima as pm
+from openpyxl.utils.dataframe import dataframe_to_rows
+from openpyxl.styles import PatternFill, Font
 
 # …any other imports you used (e.g. seaborn if you still want plots in the notebook)…
 # Note: Streamlit can show matplotlib charts directly, but if you only need Excel output,
