@@ -1,5 +1,5 @@
 # streamlit_app.py
-#Heijunka project
+#Heijunka project for streamlit
 
 import streamlit as st
 import tempfile, os
