@@ -123,7 +123,7 @@ def run_forecast_pipeline(in_path: str, out_path: str):
     if "Forecast" in workbook.sheetnames:
         del workbook["Forecast"]
     sheet_fc = workbook.create_sheet(title="Forecast")
-    bold_font = Font(bold=True)
+    bold_font = openpyxl.styles.Font(bold=True)
     
     # 2) Build a DataFrame for these predictions
     df_final = pd.DataFrame({
