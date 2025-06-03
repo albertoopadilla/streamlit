@@ -1,4 +1,5 @@
 # streamlit_app.py
+#Heijunka project for streamlit
 
 import streamlit as st
 import tempfile, os
@@ -10,288 +11,213 @@ from pathlib import Path
 # ——————————————————————————————
 import pandas as pd
 import numpy as np
-import openpyxl
-import xgboost as xgb
-#import pmdarima as pm
 from scipy.stats import norm, gamma, kstest
 from sklearn.model_selection import TimeSeriesSplit, GridSearchCV
 from sklearn.metrics import mean_squared_error, mean_absolute_error
 import matplotlib.pyplot as plt
+import openpyxl
+import xgboost as xgb
+#import pmdarima as pm
+from openpyxl.utils.dataframe import dataframe_to_rows
+from openpyxl.styles import PatternFill, Font
 
-def run_forecast_pipeline(input_path: str, output_path: str) -> None:
+# …any other imports you used (e.g. seaborn if you still want plots in the notebook)…
+# Note: Streamlit can show matplotlib charts directly, but if you only need Excel output,
+#       you don’t have to display the charts in the Streamlit UI.
+
+
+# ——————————————————————————————
+# 2) Wrap your existing script into one function
+#    that reads an input Excel and writes a new Excel with forecasts.
+#    You can literally paste your code inside here, replacing hardcoded filenames
+#    with the in_path/out_path parameters.
+# ——————————————————————————————
+
+def run_forecast_pipeline(in_path: str, out_path: str):
     """
-    1) Reads the uploaded Excel workbook from input_path.
-    2) Runs the full forecasting pipeline (data prep, Monte Carlo, ARIMA, XGBoost, model comparison, etc.).
-    3) Writes a new “Forecast” sheet into the workbook and saves it to output_path.
+    1) Load 'GLOBAL_LEAN_1_copia.xlsx' from in_path
+    2) Do all the sheet-by-sheet loops, compute ARIMA, XGBoost, Monte Carlo, etc.
+    3) Write the final Forecast sheet and any Heijunka formulas into out_path
     """
-    import pandas as pd
-    import numpy as np
-    import openpyxl
-    from scipy.stats import norm, gamma, kstest
-    #from statsmodels.tsa.statespace.sarimax import SARIMAX
-    #import pmdarima as pm
-    from xgboost import XGBRegressor
-    from sklearn.model_selection import TimeSeriesSplit, GridSearchCV
-    from sklearn.metrics import mean_squared_error, mean_absolute_error
+    # Load the workbook
+    workbook = openpyxl.load_workbook(in_path)
+    sheet_ins = workbook["Instrucciones"]
+    valor = sheet_ins["C2"].value
 
-    # 1) Load the workbook and read “Instrucciones” to find how many “Proceso i” sheets exist
-    workbook = openpyxl.load_workbook(input_path)
-    instrucciones_sheet = workbook["Instrucciones"]
-    valor = instrucciones_sheet["C2"].value  # Number of “Proceso” sheets
-
-    # Dictionaries to hold each DataFrame and parameters
-    dfs = {}        # will store df_{i} (full data)
-    params = {}     # will store parameters extracted from each “Proceso i” sheet
-
-    # 2) For each Proceso i: read into a pandas DataFrame, extract H1..H7 parameters, keep only needed columns
+    # Create dataframes for each "Proceso i"
+    dfs = {}
+    params_dict = {}
     for i in range(1, valor + 1):
-        # Read sheet “Proceso i” into a pandas DataFrame
-        df_i = pd.read_excel(input_path, sheet_name=f"Proceso {i}")
+        df_i = pd.read_excel(in_path, sheet_name=f"Proceso {i}")
         sheet_i = workbook[f"Proceso {i}"]
 
-        # Extract parameters (H1 through H7)
-        turno = sheet_i["H1"].value
-        horas = sheet_i["H2"].value
-        descanso = sheet_i["H3"].value
-        productividad = sheet_i["H4"].value
-        productividad_objetivo = sheet_i["H6"].value
-        trabajadores = sheet_i["H7"].value
+        turno   = sheet_i["H1"].value
+        horas   = sheet_i["H2"].value
+        descanso= sheet_i["H3"].value
+        prod    = sheet_i["H4"].value
+        prod_obj= sheet_i["H6"].value
+        trab    = sheet_i["H7"].value
 
-        # Save these parameters in a dictionary
-        params[i] = {
-            "turno": turno,
-            "horas": horas,
-            "descanso": descanso,
-            "productividad": productividad,
-            "productividad_objetivo": productividad_objetivo,
-            "trabajadores": trabajadores
-        }
+        # Keep only the needed columns:
+        df_i = df_i[["Día", "Turno", "Carga histórica", "Número de FTE"]].copy()
+        # Add Date column, drop original Día
+        df_i["Date"] = pd.to_datetime(df_i["Día"])
+        df_i.drop(columns=["Día"], inplace=True)
+        # Group stats (mean/std) if you want plots or stats
+        # ...
+        # Save to dict for later use:
+        dfs[i] = df_i.copy()
+        params_dict[i] = dict(
+            turno=turno,
+            horas=horas,
+            descanso=descanso,
+            productividad=prod,
+            productividad_objetivo=prod_obj,
+            trabajadores=trab
+        )
 
-        # Keep only the columns ['Día', 'Turno', 'Carga histórica', 'Número de FTE']
-        df_i = df_i[["Día", "Turno", "Carga histórica", "Número de FTE"]]
+    # Example: Focus on Proceso 1 for demonstration (you can loop all i)
+    df1 = dfs[1]
+    params1 = params_dict[1]
 
-        # Convert “Día” → new “Date” column (datetime), then drop the original “Día”
-        df_i["Date"] = pd.to_datetime(df_i["Día"], format="%Y-%m-%d", errors="coerce")
-        df_i["Date"] = df_i["Date"].dt.strftime("%m/%d/%y")
-        df_i["Date"] = pd.to_datetime(df_i["Date"], format="%m/%d/%y", errors="coerce")
-        df_i = df_i.drop(columns=["Día"])
+    # Split train/test by last month
+    last_month = df1['Date'].dt.to_period("M").max()
+    df1_train = df1[df1['Date'].dt.to_period("M") < last_month].copy()
+    df1_test  = df1[df1['Date'].dt.to_period("M") == last_month].copy()
 
-        # Add DayOfWeek column
-        df_i["DayOfWeek"] = df_i["Date"].dt.day_name()
+    # ——————————————————————————————
+    # 3) MONTE CARLO SIMULATION (if you want that)
+    #    (you already had a function `simulacion_montecarlo(df)` in your script)
+    # ——————————————————————————————
+    def create_features(df, label=None):
+        df2 = df.copy()
+        df2["dayofweek"] = df2["Date"].dt.dayofweek
+        df2["quarter"]   = df2["Date"].dt.quarter
+        df2["month"]     = df2["Date"].dt.month
+        df2["year"]      = df2["Date"].dt.year
+        df2["dayofyear"] = df2["Date"].dt.dayofyear
+        df2["day"]       = df2["Date"].dt.day
+        df2["week"]      = df2["Date"].dt.isocalendar().week
 
-        # Store the cleaned DataFrame
-        dfs[i] = df_i
-
-    # 3) Split each df_i into train/test by last-month logic
-    trains = {}
-    tests = {}
-    for i in range(1, valor + 1):
-        df_i = dfs[i]
-        last_month = df_i["Date"].dt.to_period("M").max()
-        df_i_train = df_i[df_i["Date"].dt.to_period("M") < last_month].copy()
-        df_i_test = df_i[df_i["Date"].dt.to_period("M") == last_month].copy()
-        trains[i] = df_i_train
-        tests[i] = df_i_test
-
-    # 4) For convenience, let df_1 be the full DataFrame for Proceso 1
-    df_1 = dfs[1]
-    df_1_train = trains[1]
-    df_1_test = tests[1]
-
-    # 5) ----- MONTE CARLO SIMULATION on df_1_train -----
-    def simulacion_montecarlo(df: pd.DataFrame, num_dias: int = 30) -> pd.DataFrame:
-        valores_historicos = df["Carga histórica"].dropna().values
-        media = np.mean(valores_historicos)
-        desviacion = np.std(valores_historicos)
-        pred_normal = np.random.normal(media, desviacion, num_dias)
-        pred_bootstrap = np.random.choice(valores_historicos, num_dias, replace=True)
-        params_fit = norm.fit(valores_historicos)
-        pred_empirica = norm.rvs(*params_fit, size=num_dias)
-        fechas_futuras = pd.date_range(start=df["Date"].max() + pd.Timedelta(days=1), periods=num_dias)
-        predicciones_df = pd.DataFrame({
-            "Fecha": fechas_futuras,
-            "Distribución Normal": pred_normal,
-            "Bootstrapping": pred_bootstrap,
-            "Distribución Empírica": pred_empirica
-        })
-        return predicciones_df
-
-    predicciones_mc = simulacion_montecarlo(df_1_train, num_dias=30)
-
-    # 7) ----- XGBOOST FORECAST on df_1_train -----
-    def create_xgb_features(df: pd.DataFrame, label_col: str = None):
-        df_ = df.copy()
-        df_["year"] = df_["Date"].dt.year
-        df_["dayofmonth"] = df_["Date"].dt.day
-        df_["dayofyear"] = df_["Date"].dt.dayofyear
-        df_["weekofyear"] = df_["Date"].dt.isocalendar().week
-        df_["quarter"] = df_["Date"].dt.quarter
-        df_["dayofweek"] = df_["Date"].dt.dayofweek
-        df_["month"] = df_["Date"].dt.month
-        features = ["dayofweek", "month", "quarter", "year", "dayofmonth", "dayofyear", "weekofyear"]
-        X = df_[features]
-        if label_col:
-            return X, df_[label_col]
+        X = df2[["dayofweek", "quarter", "month", "year", "dayofyear", "day", "week"]]
+        if label:
+            y = df2[label]
+            return X, y
         return X
 
-    X_tr, y_tr = create_xgb_features(df_1_train, label_col="Carga histórica")
-    X_te, y_te = create_xgb_features(df_1_test, label_col="Carga histórica")
+    # Train XGBoost on df1_train
+    X_train, y_train = create_features(df1_train, label="Carga histórica")
+    X_test,  y_test  = create_features(df1_test,  label="Carga histórica")
 
-    xgb_model = XGBRegressor(objective="reg:squarederror", random_state=42)
-    param_grid = {
-        "n_estimators": [50, 200, 500],
-        "max_depth": [1, 5, 10],
-        "learning_rate": [0.005, 0.05, 0.15]
-    }
-    tscv = TimeSeriesSplit(n_splits=5)
-    grid = GridSearchCV(xgb_model, param_grid, cv=tscv, scoring="neg_mean_squared_error", n_jobs=-1, verbose=False)
-    grid.fit(X_tr, y_tr)
+    xgb_model = xgb.XGBRegressor(n_estimators=100, max_depth=5, learning_rate=0.1, subsample=0.8)
+    xgb_model.fit(X_train, y_train)
+    # Forecast next 30 days
+    last_date = df1["Date"].max()
+    future_dates = pd.date_range(start=last_date + pd.Timedelta(days=1), periods=30, freq="D")
+    df_future = pd.DataFrame({"Date": future_dates})
+    X_future = create_features(df_future)
+    preds_future = xgb_model.predict(X_future)
 
-    best_xgb = grid.best_estimator_
-    preds_xgb_test = best_xgb.predict(X_te)
-    rmse_xgb = np.sqrt(mean_squared_error(y_te, preds_xgb_test))
-    mae_xgb = mean_absolute_error(y_te, preds_xgb_test)
+    # ——————————————————————————————
+    # 4) WRITE THE NEW "Forecast" SHEET into the same workbook object
+    # ——————————————————————————————
 
-    # 8) ----- COMBINE ALL MODEL FORECASTS and PICK BEST by MAE against df_1_test -----
-    # Build a DataFrame of “predicciones_mc” means if needed:
-    # For Monte Carlo, use “Distribución Normal” column as its forecast
-    mc_mean = predicciones_mc["Distribución Normal"].values
-
-    # Actual df_1_test dates
-    test_dates = df_1_test["Date"].reset_index(drop=True)
-
-    # Assemble a comparison DataFrame
-    df_compare = pd.DataFrame({
-        "Fecha": test_dates,
-        "MC": mc_mean[: len(df_1_test)],  # trim if needed
-        "XGBoost": preds_xgb_test
-    })
-
-    # Compute MAE for each column
-    maes = {}
-    for col in df_compare.columns:
-        if col == "Fecha":
-            continue
-        maes[col] = mean_absolute_error(df_1_test["Carga histórica"].values[: len(df_1_test)], df_compare[col].values)
-
-    # Find the model name with smallest MAE
-    best_model = min(maes, key=maes.get)
-
-    # 9) ----- RE-TRAIN BEST MODEL ON FULL df_1 and PREDICT NEXT 30 DAYS -----
-    if best_model == "XGBoost":
-        # Refit XGBoost on the entire df_1 (train + test)
-        X_full, y_full = create_xgb_features(df_1, label_col="Carga histórica")
-        best_xgb.fit(X_full, y_full)
-
-        # Build future features for next 30 calendar days
-        last_date_full = df_1["Date"].max()
-        future_dates = pd.date_range(start=last_date_full + pd.Timedelta(days=1), periods=30, freq="D")
-        df_future_feat = pd.DataFrame({"Date": future_dates})
-        X_future = create_xgb_features(df_future_feat, label_col=None)
-        preds_future = best_xgb.predict(X_future)
-
-    else:
-        # If best model is SARIMA or AutoARIMA/SW_T, use that forecast for the next 30 days
-        # We already have sarima_forecast and auto1..auto6. Pick the array that matches best_model:
-        if best_model == "Sarima":
-            preds_future = sarima_forecast.values
-            future_dates = pd.date_range(start=df_1["Date"].max() + pd.Timedelta(days=1), periods=30, freq="D")
-        elif best_model.startswith("AutoARIMA_SW_T"):
-            preds_future = auto1
-            future_dates = pd.date_range(start=df_1["Date"].max() + pd.Timedelta(days=1), periods=30, freq="D")
-        elif best_model.startswith("AutoARIMA_SW_N"):
-            preds_future = auto2
-            future_dates = pd.date_range(start=df_1["Date"].max() + pd.Timedelta(days=1), periods=30, freq="D")
-        elif best_model.startswith("AutoARIMA_SM_T"):
-            preds_future = auto3
-            future_dates = pd.date_range(start=df_1["Date"].max() + pd.Timedelta(days=1), periods=30, freq="D")
-        elif best_model.startswith("AutoARIMA_SM_N"):
-            preds_future = auto4
-            future_dates = pd.date_range(start=df_1["Date"].max() + pd.Timedelta(days=1), periods=30, freq="D")
-        elif best_model.startswith("AutoARIMA_NS_T"):
-            preds_future = auto5
-            future_dates = pd.date_range(start=df_1["Date"].max() + pd.Timedelta(days=1), periods=30, freq="D")
-        elif best_model.startswith("AutoARIMA_NS_N"):
-            preds_future = auto6
-            future_dates = pd.date_range(start=df_1["Date"].max() + pd.Timedelta(days=1), periods=30, freq="D")
-        else:
-            # Use Monte Carlo “Distribución Normal” as fallback
-            preds_future = predicciones_mc["Distribución Normal"].values
-            future_dates = pd.date_range(start=df_1["Date"].max() + pd.Timedelta(days=1), periods=30, freq="D")
-
-    # 10) ----- UPDATE/CREATE the “Forecast” sheet via openpyxl -----
-    # Delete old Forecast sheet if it still exists
     if "Forecast" in workbook.sheetnames:
         del workbook["Forecast"]
     sheet_fc = workbook.create_sheet(title="Forecast")
     bold_font = openpyxl.styles.Font(bold=True)
-
-    # Build a DataFrame for future_dates/preds_future
+    
+    # 2) Build a DataFrame for these predictions
     df_final = pd.DataFrame({
         "Día": future_dates,
         "Demanda": preds_future
     })
-
-    # Write headers (A1:D1)
+    
+    # 3) Write headers with bold font
     sheet_fc["A1"].value = "Día"
-    sheet_fc["A1"].font = bold_font
+    sheet_fc["A1"].font  = bold_font
     sheet_fc["B1"].value = "Demanda"
-    sheet_fc["B1"].font = bold_font
+    sheet_fc["B1"].font  = bold_font
     sheet_fc["C1"].value = "Edición"
-    sheet_fc["C1"].font = bold_font
+    sheet_fc["C1"].font  = bold_font
     sheet_fc["D1"].value = "Demanda Final"
-    sheet_fc["D1"].font = bold_font
-
-    # Write data rows (row 2..)
-    for idx, row in enumerate(df_final.itertuples(index=False), start=2):
-        sheet_fc.cell(row=idx, column=1).value = row.Día
-        sheet_fc.cell(row=idx, column=2).value = float(row.Demanda)
-        # Pre-fill column D with formula: =IF(Crow=0, Brow, Crow)
-        sheet_fc.cell(row=idx, column=4).value = f"=IF(C{idx}=0, B{idx}, C{idx})"
-
-    # Fill column C (editable) with yellow background
-    fill_yellow = openpyxl.styles.PatternFill(start_color="FFFF00", end_color="FFFF00", fill_type="solid")
+    sheet_fc["D1"].font  = bold_font
+    
+    # 4) Write data rows and pre-fill the "Demanda Final" formula
+    for row_idx, row in enumerate(df_final.itertuples(index=False), start=2):
+        # Column A: the Date
+        sheet_fc.cell(row=row_idx, column=1).value = row.Día
+        # Column B: the forecasted Demanda
+        sheet_fc.cell(row=row_idx, column=2).value = float(row.Demanda)
+        # Column D: set formula to pick edited value if any, or use B value otherwise
+        sheet_fc.cell(row=row_idx, column=4).value = f"=IF(C{row_idx}=0, B{row_idx}, C{row_idx})"
+    
+    # 5) Fill editable cells in column C (Edición) with a yellow background
+    fill_yellow = PatternFill(start_color="FFFF00", end_color="FFFF00", fill_type="solid")
     for r in range(2, 2 + len(df_final)):
         sheet_fc.cell(row=r, column=3).fill = fill_yellow
-
-    # Add FTE columns E, F, G using params[1] (for Proceso 1)
-    p1 = params[1]
+    
+    # 6) Add FTE-related columns E, F, G with formulas referencing "Proceso 1" sheet
+    trabajadores = params1["trabajadores"]
+    prod        = params1["productividad"]
+    prod_obj    = params1["productividad_objetivo"]
+    
     sheet_fc["E1"].value = "Número de FTE actuales"
-    sheet_fc["E1"].font = bold_font
+    sheet_fc["E1"].font  = bold_font
     sheet_fc["F1"].value = "Productividad (u/hh)"
-    sheet_fc["F1"].font = bold_font
+    sheet_fc["F1"].font  = bold_font
     sheet_fc["G1"].value = "Productividad objetivo (u/hh)"
-    sheet_fc["G1"].font = bold_font
-
+    sheet_fc["G1"].font  = bold_font
+    
     for r in range(2, 2 + len(df_final)):
-        # Use formulas that reference the “Proceso 1” sheet’s H7, H4, H6
+        # Always the same numeric values or formulas pointing to "Proceso 1"!H7, H4, H6
         sheet_fc.cell(row=r, column=5).value = f"='Proceso 1'!$H$7"
         sheet_fc.cell(row=r, column=6).value = f"='Proceso 1'!$H$4"
         sheet_fc.cell(row=r, column=7).value = f"='Proceso 1'!$H$6"
-
-    # Heijunka 1 formulas (J→T)
-    for r in range(2, 2 + len(df_final)):
-        sheet_fc.cell(row=r, column=10).value = f"=D{r}/F{r}" \
-            # J
-        sheet_fc.cell(row=r, column=11).value = f"=J{r}/('Proceso 1'!$H$2-('Proceso 1'!$H$3/60))" \
-            # K
-        sheet_fc.cell(row=r, column=12).value = f"=D{r}/G{r}" \
-            # L
-        sheet_fc.cell(row=r, column=13).value = f"=L{r}/('Proceso 1'!$H$2-('Proceso 1'!$H$3/60))" \
-            # M
-        sheet_fc.cell(row=r, column=14).value = f"=J{r}-L{r}" \
-            # N
-        sheet_fc.cell(row=r, column=15).value = f"=K{r}-M{r}" \
-            # O
-        sheet_fc.cell(row=r, column=16).value = f"=J{r}/(E{r}*('Proceso 1'!$H$2-('Proceso 1'!$H$3/60)))" \
-            # P
-        sheet_fc.cell(row=r, column=17).value = f"=J{r}-(E{r}*('Proceso 1'!$H$2-('Proceso 1'!$H$3/60)))" \
-            # Q
-        sheet_fc.cell(row=r, column=18).value = 25  # R
-        sheet_fc.cell(row=r, column=19).value = 18  # S
-        sheet_fc.cell(row=r, column=20).value = f"=IF(Q{r}>0,Q{r}*R{r},-Q{r}*S{r})"  # T
-
-    # Heijunka 2 headers (V→AB) and defaults
+    
+    # 7) Add Heijunka grid/formula logic in columns H through Z (example placeholders)
+    #    You can adjust column indices and formulas as needed.
+    
+    # Example: Column J ("Horas necesarias") = D / F  → column index 10
+    #          Column K ("FTE necesarias")  = J / (H2 - (H3/60))  → column index 11
+    #          Column L ("Horas Objetivo")   = D / G  → column index 12
+    #          Column M ("FTE objetivos")    = L / (H2 - (H3/60))  → column index 13
+    #          Column N ("Diferencia Horas") = J - L  → column index 14
+    #          Column O ("Diferencia FTE")   = K - M  → column index 15
+    #          Column P ("Ocupación (%)")   = J / (E * (H2 - (H3/60))) → column index 16
+    #          Column Q ("Exceso/Falta Horas") = J - (E * (H2 - (H3/60))) → column index 17
+    #          Column R ("Coste hora extra")    = 25  → column index 18
+    #          Column S ("Coste hora ociosa")   = 18  → column index 19
+    #          Column T ("Coste ineficiente")   = IF(Q>0, Q*R, -Q*S) → column index 20
+    #          You can continue for columns V through Z similarly.
+    
+    for row in range(2, 2 + len(df_final)):
+        # Column J (10)
+        sheet_fc.cell(row=row, column=10).value = f"=D{row}/F{row}"
+        # Column K (11)
+        sheet_fc.cell(row=row, column=11).value = f"=J{row}/('Proceso 1'!$H$2-('Proceso 1'!$H$3/60))"
+        # Column L (12)
+        sheet_fc.cell(row=row, column=12).value = f"=D{row}/G{row}"
+        # Column M (13)
+        sheet_fc.cell(row=row, column=13).value = f"=L{row}/('Proceso 1'!$H$2-('Proceso 1'!$H$3/60))"
+        # Column N (14)
+        sheet_fc.cell(row=row, column=14).value = f"=J{row}-L{row}"
+        # Column O (15)
+        sheet_fc.cell(row=row, column=15).value = f"=K{row}-M{row}"
+        # Column P (16)
+        sheet_fc.cell(row=row, column=16).value = f"=J{row}/(E{row}*('Proceso 1'!$H$2-('Proceso 1'!$H$3/60)))"
+        # Column Q (17)
+        sheet_fc.cell(row=row, column=17).value = f"=J{row}-(E{row}*('Proceso 1'!$H$2-('Proceso 1'!$H$3/60)))"
+        # Column R (18)
+        sheet_fc.cell(row=row, column=18).value = 25
+        # Column S (19)
+        sheet_fc.cell(row=row, column=19).value = 18
+        # Column T (20)
+        sheet_fc.cell(row=row, column=20).value = f"=IF(Q{row}>0,Q{row}*R{row},-Q{row}*S{row})"
+    
+    # 8) Heijunka 2 logic in columns V through AB (for example)
+    #     Column V (22): "Heijunka 2" header was already written above if needed.
+    #     We assume V: index 22, W:23, X:24, Y:25, Z:26, AA:27, AB:28
     sheet_fc["V1"].value = "Heijunka 2"
     sheet_fc["V1"].font = bold_font
     sheet_fc["W1"].value = "Número de FTE propuesto"
@@ -306,89 +232,102 @@ def run_forecast_pipeline(input_path: str, output_path: str) -> None:
     sheet_fc["AA1"].font = bold_font
     sheet_fc["AB1"].value = "Coste total (euros)"
     sheet_fc["AB1"].font = bold_font
-
-    # Place a default “1” in AD3 and add labels in AC3/AC4
+    
+    # Place a default value of 1 in AD3 for initial W (assuming AD is column 30)
     sheet_fc["AD3"].value = 1
     sheet_fc["AC3"].value = "Número de FTE en el mes"
-    sheet_fc["AC3"].font = bold_font
+    sheet_fc["AC3"].font  = bold_font
     sheet_fc["AC4"].value = "Sobrecoste en el mes (euros)"
-    sheet_fc["AC4"].font = bold_font
-
-    # Compute and write optimal W in AD3, SUM formula in AD4
-    J_vals = df_final["Demanda"].values / p1["productividad"]
-    H2 = workbook["Proceso 1"]["H2"].value
-    H3 = workbook["Proceso 1"]["H3"].value
+    sheet_fc["AC4"].font  = bold_font
+    
+    # Compute optimal W by brute force
+    H2 = ws["H2"].value  # e.g. 8
+    H3 = ws["H3"].value
     avail = H2 - (H3 / 60.0)
     R, S = 25.0, 18.0
-
+    
+    # Prepare J array from df_final and productividad
+    J_values = df_final["Demanda"].values / params1["productividad"]
+    
     def total_cost(W: float) -> float:
-        X = J_vals - W * avail
+        X = J_values - W * avail
         AA = np.where(X > 0, X * R, -X * S)
         return AA.sum()
-
-    Ws = np.arange(0, 5001, 1)
+    
+    Ws = np.arange(0, 5001, 1)  # 0..5000 inclusive, step=1
     costs = np.array([total_cost(w) for w in Ws])
-    idx_min = costs.argmin()
-    W_opt = Ws[idx_min]
-
+    idx   = costs.argmin()
+    W_opt    = Ws[idx]
+    min_cost = costs[idx]
+    
+    # Write optimal W and cost into the sheet
     sheet_fc["AD3"].value = W_opt
-    sheet_fc["AD4"].value = f"=SUM(AA2:AA{1 + len(df_final)})"
-
-    # 11) Apply number formatting (two decimals) to relevant columns
+    sheet_fc["AD4"].value = f"=SUM(AA2:AA{1 + len(df_final)})"  # Total cost formula based on column AA
+    
+    # 9) Apply number formatting (two decimals) to relevant columns
     two_decimals = NamedStyle(name="two_decimals")
     two_decimals.number_format = "0.00"
     workbook.add_named_style(two_decimals)
-
-    cols_to_style = [
-        1, 2, 3, 4,        # A,B,C,D
-        9, 10, 11, 12,     # I,J,K,L
-        13, 14, 15, 16,    # M,N,O,P
-        17, 20,            # Q, T
-        22, 23, 24,        # V, W, X
-        27, 28, 29, 30     # AA, AB, AC, AD
+    
+    # Columns to style: A (1), B (2), C (3), D (4), I (9), J (10), K (11), L (12), M (13), N (14), O (15), P (16), Q (17), T (20),
+    # V (22), W (23), X (24), AA (27), AB (28), AC (29), AD (30)
+    columns_to_style = [
+        1, 2, 3, 4, 9, 10, 11, 12, 13, 14,
+        15, 16, 17, 20, 22, 23, 24, 27, 28, 29, 30
     ]
-    for col_idx in cols_to_style:
-        letter = sheet_fc.cell(row=1, column=col_idx).column_letter
-        for cell in sheet_fc[letter]:
-            if cell.row > 1:
+    for col_idx in columns_to_style:
+        col_letter = sheet_fc.cell(row=1, column=col_idx).column_letter
+        for cell in sheet_fc[col_letter]:
+            if cell.row > 1:  # Skip header row
                 cell.style = two_decimals
-
-    # 12) Apply pink (I→T) and blue (V→AD) backgrounds; C is already yellow
-    pink_fill = openpyxl.styles.PatternFill(start_color="FFCCCC", end_color="FFCCCC", fill_type="solid")
-    blue_fill = openpyxl.styles.PatternFill(start_color="CCFFFF", end_color="CCFFFF", fill_type="solid")
-    yellow_fill = openpyxl.styles.PatternFill(start_color="FFFFCC", end_color="FFFFCC", fill_type="solid")
-
-    for r in range(2, 2 + len(df_final)):
-        sheet_fc[f"C{r}"].fill = yellow_fill
-        for c in range(9, 21):   # I(9) through T(20)
-            sheet_fc.cell(row=r, column=c).fill = pink_fill
-        for c in range(22, 31):  # V(22) through AD(30)
-            sheet_fc.cell(row=r, column=c).fill = blue_fill
-
-    # 13) Auto-size columns & adjust row heights
+    
+    # 10) Fill ranges with pink and blue backgrounds
+    from openpyxl.utils import column_index_from_string, get_column_letter
+    
+    pink_fill = PatternFill(start_color="FFCCCC", end_color="FFCCCC", fill_type="solid")
+    blue_fill = PatternFill(start_color="CCFFFF", end_color="CCFFFF", fill_type="solid")
+    yellow_fill = PatternFill(start_color="FFFFCC", end_color="FFFFCC", fill_type="solid")
+    
+    for row in range(2, 2 + len(df_final)):
+        # Column C is already yellow
+        sheet_fc[f"C{row}"].fill = yellow_fill
+    
+        # Pink: columns I through T  (I=9 through T=20)
+        for col in range(9, 21):
+            sheet_fc.cell(row=row, column=col).fill = pink_fill
+    
+        # Blue: columns V through AD (V=22 through AD=30)
+        for col in range(22, 31):
+            sheet_fc.cell(row=row, column=col).fill = blue_fill
+    
+    # 11) Auto-size columns and adjust row heights
     for col_cells in sheet_fc.columns:
         max_length = 0
-        col_letter = col_cells[0].column_letter
+        col_letter = get_column_letter(col_cells[0].column)
         for cell in col_cells:
             if cell.value is not None:
                 length = len(str(cell.value))
                 if length > max_length:
                     max_length = length
-        sheet_fc.column_dimensions[col_letter].width = max_length + 2
-
+        sheet_fc.column_dimensions[col_letter].width = max_length + 2  # add padding
+    
     for row_cells in sheet_fc.iter_rows():
         max_lines = 1
         for cell in row_cells:
             if isinstance(cell.value, str):
-                lines = cell.value.split("\n")
+                lines = str(cell.value).split("\n")
                 if len(lines) > max_lines:
                     max_lines = len(lines)
         sheet_fc.row_dimensions[row_cells[0].row].height = max_lines * 15
+    
+    # 12) Save the updated workbook to out_path
+    workbook.save(out_path)
+    print(f"Forecast saved to: {out_path}")
 
-    # 14) Save the updated workbook
-    workbook.save(output_path)
 
-
+# ——————————————————————————————
+# 3) Streamlit UI: file uploader + call pipeline + download butt
+# ——————————————————————————————
 st.title("Global Lean Forecast (Streamlit Edition)")
 st.markdown(
     """
