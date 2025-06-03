@@ -16,7 +16,7 @@ from sklearn.metrics import mean_squared_error, mean_absolute_error
 import matplotlib.pyplot as plt
 import openpyxl
 import xgboost as xgb
-import pmdarima as pm
+#import pmdarima as pm
 
 # …any other imports you used (e.g. seaborn if you still want plots in the notebook)…
 # Note: Streamlit can show matplotlib charts directly, but if you only need Excel output,
