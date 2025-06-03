@@ -118,51 +118,6 @@ def run_forecast_pipeline(input_path: str, output_path: str) -> None:
 
     predicciones_mc = simulacion_montecarlo(df_1_train, num_dias=30)
 
-    # 6) ----- SARIMA / AutoARIMA FORECAST on df_1_train -----
-    # Prepare time series for SARIMA
-    ts_data = df_1_train.set_index("Date")["Carga histórica"].sort_index()
-
-    # SARIMA with weekly seasonality = 5 business days (or adjust as needed)
-    sarima_order = (1, 1, 1)
-    seasonal_order = (1, 1, 1, 5)
-    sarima_model = SARIMAX(ts_data, order=sarima_order, seasonal_order=seasonal_order, trend="t")
-    sarima_fit = sarima_model.fit(disp=False)
-    sarima_forecast = sarima_fit.forecast(steps=30)
-
-    # AutoARIMA variants (six runs with different seasonal/trend combos)
-    def run_auto_arima(data_series, seasonal: bool, m: int, trend: str):
-        model = pm.auto_arima(
-            data_series,
-            seasonal=seasonal,
-            m=m,
-            trend=trend,
-            error_action="ignore",
-            suppress_warnings=True,
-            stepwise=True
-        )
-        return model.predict(n_periods=30)
-
-    auto1 = run_auto_arima(ts_data, seasonal=True, m=5, trend="t")
-    auto2 = run_auto_arima(ts_data, seasonal=True, m=5, trend="n")
-    auto3 = run_auto_arima(ts_data, seasonal=True, m=12, trend="t")
-    auto4 = run_auto_arima(ts_data, seasonal=True, m=12, trend="n")
-    auto5 = run_auto_arima(ts_data, seasonal=False, m=1, trend="t")
-    auto6 = run_auto_arima(ts_data, seasonal=False, m=1, trend="n")
-
-    # Build a DataFrame of all ARIMA forecasts
-    df_arima = pd.concat(
-        [
-            pd.Series(auto1, name="Seasonal Week & Trend"),
-            pd.Series(auto2, name="Seasonal Week & No Trend"),
-            pd.Series(auto3, name="Seasonal Month & Trend"),
-            pd.Series(auto4, name="Seasonal Month & No Trend"),
-            pd.Series(auto5, name="Not seasonal & Trend"),
-            pd.Series(auto6, name="Not seasonal & No Trend"),
-            pd.Series(sarima_forecast.values, name="Sarima")
-        ],
-        axis=1
-    )
-
     # 7) ----- XGBOOST FORECAST on df_1_train -----
     def create_xgb_features(df: pd.DataFrame, label_col: str = None):
         df_ = df.copy()
@@ -209,13 +164,6 @@ def run_forecast_pipeline(input_path: str, output_path: str) -> None:
     df_compare = pd.DataFrame({
         "Fecha": test_dates,
         "MC": mc_mean[: len(df_1_test)],  # trim if needed
-        "AutoARIMA_SW_T": auto1[: len(df_1_test)],
-        "AutoARIMA_SW_N": auto2[: len(df_1_test)],
-        "AutoARIMA_SM_T": auto3[: len(df_1_test)],
-        "AutoARIMA_SM_N": auto4[: len(df_1_test)],
-        "AutoARIMA_NS_T": auto5[: len(df_1_test)],
-        "AutoARIMA_NS_N": auto6[: len(df_1_test)],
-        "Sarima": sarima_forecast.values[: len(df_1_test)],
         "XGBoost": preds_xgb_test
     })
 
