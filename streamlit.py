@@ -220,7 +220,7 @@ def run_forecast_pipeline(in_path: str, out_path: str):
     sheet_fc["AB1"].value = "Coste total (euros)"
     sheet_fc["AB1"].font = bold_font
 
-    sheet_fc = ["AD3"] = 1
+    sheet_fc["AD3"].value = 1
 
     for row in range(2, 2 + len(df_final)):
     sheet_fc.cell(row = row, column = 23).value = f"=$AD$3"
