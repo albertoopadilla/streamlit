@@ -313,14 +313,43 @@ def run_forecast_pipeline(in_path: str, out_path: str):
     # 7) Auto‐size columns and rows in “Forecast” sheet
     # ——————————————————————————————
     # (A) Auto‐size each column by its max text length
+    # 3) Auto-size columns A…Z… (but skip raw formula lengths and clamp to MAX_COL_WIDTH)
     for col_cells in sheet_fc.columns:
-        max_length = 0
-        col_letter = openpyxl.utils.get_column_letter(col_cells[0].column)
+        max_display_len = 0
+        col_letter = get_column_letter(col_cells[0].column)
+    
         for cell in col_cells:
-            if cell.value is not None:
-                length = len(str(cell.value))
-        # Add a little extra padding (e.g. +2 characters)
-        sheet_fc.column_dimensions[col_letter].width = length
+            if cell.row == 1:
+                # If row 1 is a header (e.g. "Día", "Demanda", etc.), measure its header text
+                text = str(cell.value) if cell.value is not None else ""
+                display_len = max(len(line[:TRUNCATE_CHARS]) for line in text.splitlines()) if text else 0
+            else:
+                val = cell.value
+                if val is None:
+                    continue
+    
+                text = str(val)
+
+                if IGNORE_FORMULAS and text.startswith("="):
+                    # If it’s a formula, we assume whatever Excel displays fits in ~12 characters
+                    display_len = 12
+                else:
+                    # If it’s a multi-line string, take the longest line (up to TRUNCATE_CHARS)
+                    display_len = max(len(line[:TRUNCATE_CHARS]) for line in text.splitlines())
+    
+            if display_len > max_display_len:
+                max_display_len = display_len
+    
+        # Compute “desired width” = longest + a little padding, then clamp:
+        desired_width = max_display_len + 2  # +2 for Excel’s built-in padding
+        if desired_width > MAX_COL_WIDTH:
+            desired_width = MAX_COL_WIDTH
+        if desired_width < 8:
+            desired_width = 8  # enforce a minimum width of ~8
+    
+        sheet_fc.column_dimensions[col_letter].width = desired_width
+
+
 
     # (B) Auto‐size each row by number of wrapped lines
     for row_cells in sheet_fc.rows:
