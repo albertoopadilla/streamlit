@@ -160,6 +160,30 @@ def run_forecast_pipeline(in_path: str, out_path: str):
     sheet_fc["E1"].value = "Número de FTE actuales";      sheet_fc["E1"].font = bold_font
     sheet_fc["F1"].value = "Productividad";               sheet_fc["F1"].font = bold_font
     sheet_fc["G1"].value = "Productividad objetivo";      sheet_fc["G1"].font = bold_font
+    sheet_fc["I1"] = "Heijunka 1"
+    sheet_fc["I1"].font = bold_font
+    sheet_fc["J1"] = "Horas necesarias"
+    sheet_fc["J1"].font = bold_font
+    sheet_fc["K1"] = "FTE necesarias"
+    sheet_fc["K1"].font = bold_font
+    sheet_fc["L1"] = "Horas Objetivo"
+    sheet_fc["L1"].font = bold_font
+    sheet_fc["M1"] = "FTE objetivos"
+    sheet_fc["M1"].font = bold_font
+    sheet_fc["N1"] = "Diferencia Horas"
+    sheet_fc["N1"].font = bold_font
+    sheet_fc["O1"] = "Diferencia FTE"
+    sheet_fc["O1"].font = bold_font
+    sheet_fc["P1"] = "Ocupación (Porcentaje)"
+    sheet_fc["P1"].font = bold_font
+    sheet_fc["Q1"] = "Exceso/Falta de Horas (horas)"
+    sheet_fc["Q1"].font = bold_font
+    sheet_fc["R1"] = "Coste hora extra (euros)"
+    sheet_fc["R1"].font = bold_font
+    sheet_fc["S1"] = "Coste hora ociosa (euros)"
+    sheet_fc["S1"].font = bold_font
+    sheet_fc["T1"] = "Coste ineficiente (euros)"
+    sheet_fc["T1"].font = bold_font
 
     for r in range(2, 2 + len(df_final)):
         sheet_fc.cell(row=r, column=5).value = trabajadores
