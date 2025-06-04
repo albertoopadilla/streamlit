@@ -17,6 +17,7 @@ from scipy.stats import norm, gamma, kstest
 from sklearn.model_selection import TimeSeriesSplit, GridSearchCV
 from sklearn.metrics import mean_squared_error, mean_absolute_error
 import matplotlib.pyplot as plt
+from openpyxl.utils import column_index_from_string, get_column_letter
 
 # …any other imports you used (e.g. seaborn if you still want plots in the notebook)…
 # Note: Streamlit can show matplotlib charts directly, but if you only need Excel output,
@@ -301,11 +302,11 @@ def run_forecast_pipeline(in_path: str, out_path: str):
 
     for r in range(2, last_row + 1):
         # Columns I (col 9) through T (col 20) → pink
-        for col_idx in range(column_index_from_string("I"), column_index_from_string("T") + 1):
+        for col_idx in range(openpyxl.utils.column_index_from_string("I"), openpyxl.utils.column_index_from_string("T") + 1):
             sheet_fc.cell(row=r, column=col_idx).fill = pink_fill
     
         # Columns V (col 22) through AD (col 30) → blue
-        for col_idx in range(column_index_from_string("V"), column_index_from_string("AD") + 1):
+        for col_idx in range(openpyxl.utils.column_index_from_string("V"), openpyxl.utils.column_index_from_string("AD") + 1):
             sheet_fc.cell(row=r, column=col_idx).fill = blue_fill
 
     # ——————————————————————————————
@@ -314,7 +315,7 @@ def run_forecast_pipeline(in_path: str, out_path: str):
     # (A) Auto‐size each column by its max text length
     for col_cells in sheet_fc.columns:
         max_length = 0
-        col_letter = get_column_letter(col_cells[0].column)
+        col_letter = openpyxl.utils.get_column_letter(col_cells[0].column)
         for cell in col_cells:
             if cell.value is not None:
                 length = len(str(cell.value))
