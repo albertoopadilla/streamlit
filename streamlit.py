@@ -299,14 +299,14 @@ def run_forecast_pipeline(in_path: str, out_path: str):
     pink_fill   = PatternFill(start_color="FFCCCC", end_color="FFCCCC", fill_type="solid")
     blue_fill   = PatternFill(start_color="CCFFFF", end_color="CCFFFF", fill_type="solid")
 
-        for r in range(2, last_row + 1):
-            # Columns I (col 9) through T (col 20) → pink
-            for col_idx in range(column_index_from_string("I"), column_index_from_string("T") + 1):
-                sheet_fc.cell(row=r, column=col_idx).fill = pink_fill
+    for r in range(2, last_row + 1):
+        # Columns I (col 9) through T (col 20) → pink
+        for col_idx in range(column_index_from_string("I"), column_index_from_string("T") + 1):
+            sheet_fc.cell(row=r, column=col_idx).fill = pink_fill
     
-            # Columns V (col 22) through AD (col 30) → blue
-            for col_idx in range(column_index_from_string("V"), column_index_from_string("AD") + 1):
-                sheet_fc.cell(row=r, column=col_idx).fill = blue_fill
+        # Columns V (col 22) through AD (col 30) → blue
+        for col_idx in range(column_index_from_string("V"), column_index_from_string("AD") + 1):
+            sheet_fc.cell(row=r, column=col_idx).fill = blue_fill
 
     # ——————————————————————————————
     # 7) Auto‐size columns and rows in “Forecast” sheet
