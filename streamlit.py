@@ -322,6 +322,8 @@ def run_forecast_pipeline(in_path: str, out_path: str):
         for cell in col_cells:
             if cell.value is not None:
                 length = len(str(cell.value))
+                if length > max_length:
+                    max_length = length
         # Add a little extra padding (e.g. +2 characters)
         sheet_fc.column_dimensions[col_letter].width = length
 
