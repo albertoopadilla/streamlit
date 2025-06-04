@@ -149,7 +149,7 @@ def run_forecast_pipeline(in_path: str, out_path: str):
         sheet_fc.cell(row=row_idx, column=4).value = f"=IF(C{row_idx}=0, B{row_idx}, C{row_idx})"
 
     # Fill editable cells in column C with a yellow background:
-    fill_yellow = openpyxl.styles.PatternFill(start_color="FFFF00", end_color="FFFF00", fill_type="solid")
+    fill_yellow = openpyxl.styles.PatternFill(start_color="8ED973", end_color="8ED973", fill_type="solid")
     for r in range(2, 2 + len(df_final)):
         sheet_fc.cell(row=r, column=3).fill = fill_yellow
 
@@ -297,8 +297,8 @@ def run_forecast_pipeline(in_path: str, out_path: str):
                 
     last_row = 1 + len(df_final)
 
-    pink_fill   = openpyxl.styles.PatternFill(start_color="FFCCCC", end_color="FFCCCC", fill_type="solid")
-    blue_fill   = openpyxl.styles.PatternFill(start_color="CCFFFF", end_color="CCFFFF", fill_type="solid")
+    pink_fill   = openpyxl.styles.PatternFill(start_color="FFFF00", end_color="FFFF00", fill_type="solid")
+    blue_fill   = openpyxl.styles.PatternFill(start_color="305EF0", end_color="305EF0", fill_type="solid")
 
     for r in range(2, last_row + 1):
         # Columns I (col 9) through T (col 20) → pink
@@ -315,40 +315,13 @@ def run_forecast_pipeline(in_path: str, out_path: str):
     # (A) Auto‐size each column by its max text length
     # 3) Auto-size columns A…Z… (but skip raw formula lengths and clamp to MAX_COL_WIDTH)
     for col_cells in sheet_fc.columns:
-        max_display_len = 0
-        col_letter = get_column_letter(col_cells[0].column)
-    
+        max_length = 0
+        col_letter = openpyxl.utils.get_column_letter(col_cells[0].column)
         for cell in col_cells:
-            if cell.row == 1:
-                # If row 1 is a header (e.g. "Día", "Demanda", etc.), measure its header text
-                text = str(cell.value) if cell.value is not None else ""
-                display_len = max(len(line[:TRUNCATE_CHARS]) for line in text.splitlines()) if text else 0
-            else:
-                val = cell.value
-                if val is None:
-                    continue
-    
-                text = str(val)
-
-                if IGNORE_FORMULAS and text.startswith("="):
-                    # If it’s a formula, we assume whatever Excel displays fits in ~12 characters
-                    display_len = 12
-                else:
-                    # If it’s a multi-line string, take the longest line (up to TRUNCATE_CHARS)
-                    display_len = max(len(line[:TRUNCATE_CHARS]) for line in text.splitlines())
-    
-            if display_len > max_display_len:
-                max_display_len = display_len
-    
-        # Compute “desired width” = longest + a little padding, then clamp:
-        desired_width = max_display_len + 2  # +2 for Excel’s built-in padding
-        if desired_width > MAX_COL_WIDTH:
-            desired_width = MAX_COL_WIDTH
-        if desired_width < 8:
-            desired_width = 8  # enforce a minimum width of ~8
-    
-        sheet_fc.column_dimensions[col_letter].width = desired_width
-
+            if cell.value is not None:
+                length = len(str(cell.value))
+        # Add a little extra padding (e.g. +2 characters)
+        sheet_fc.column_dimensions[col_letter].width = length
 
 
     # (B) Auto‐size each row by number of wrapped lines
