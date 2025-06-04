@@ -296,8 +296,8 @@ def run_forecast_pipeline(in_path: str, out_path: str):
                 
     last_row = 1 + len(df_final)
 
-    pink_fill   = openpyxl.PatternFill(start_color="FFCCCC", end_color="FFCCCC", fill_type="solid")
-    blue_fill   = openpyxl.PatternFill(start_color="CCFFFF", end_color="CCFFFF", fill_type="solid")
+    pink_fill   = openpyxl.styles.PatternFill(start_color="FFCCCC", end_color="FFCCCC", fill_type="solid")
+    blue_fill   = openpyxl.styles.PatternFill(start_color="CCFFFF", end_color="CCFFFF", fill_type="solid")
 
     for r in range(2, last_row + 1):
         # Columns I (col 9) through T (col 20) → pink
