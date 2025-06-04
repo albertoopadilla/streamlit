@@ -223,11 +223,11 @@ def run_forecast_pipeline(in_path: str, out_path: str):
     sheet_fc["AD3"].value = 1
 
     for row in range(2, 2 + len(df_final)):
-    sheet_fc.cell(row = row, column = 23).value = f"=$AD$3"
-    sheet_fc.cell(row=row, column=24).value = f"=J{row} - (W{row}*('Proceso 1'!$H$2-('Proceso 1'!$H$3/60)))"
-    sheet_fc.cell(row=row, column=25).value = 25
-    sheet_fc.cell(row=row, column=26).value = 18
-    sheet_fc.cell(row=row, column=27).value = f"=IF(X{row}>0,X{row}*Y{row},-1*X{row}*Z{row})"
+        sheet_fc.cell(row = row, column = 23).value = f"=$AD$3"
+        sheet_fc.cell(row=row, column=24).value = f"=J{row} - (W{row}*('Proceso 1'!$H$2-('Proceso 1'!$H$3/60)))"
+        sheet_fc.cell(row=row, column=25).value = 25
+        sheet_fc.cell(row=row, column=26).value = 18
+        sheet_fc.cell(row=row, column=27).value = f"=IF(X{row}>0,X{row}*Y{row},-1*X{row}*Z{row})"
 
     # … you can keep adding all of your Heijunka grid/formula logic here, 
     #    e.g. columns H..Z with formulas referencing cells in "Proceso 1" …
