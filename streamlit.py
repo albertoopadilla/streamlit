@@ -294,6 +294,45 @@ def run_forecast_pipeline(in_path: str, out_path: str):
                 cell.value = round(num, 2)
                 cell.number_format = "0.00"
 
+       last_row = 1 + len(df_final)
+
+    pink_fill   = PatternFill(start_color="FFCCCC", end_color="FFCCCC", fill_type="solid")
+    blue_fill   = PatternFill(start_color="CCFFFF", end_color="CCFFFF", fill_type="solid")
+
+        # Columns I (col 9) through T (col 20) → pink
+        for col_idx in range(column_index_from_string("I"), column_index_from_string("T") + 1):
+            sheet_fc.cell(row=r, column=col_idx).fill = pink_fill
+
+        # Columns V (col 22) through AD (col 30) → blue
+        for col_idx in range(column_index_from_string("V"), column_index_from_string("AD") + 1):
+            sheet_fc.cell(row=r, column=col_idx).fill = blue_fill
+
+    # ——————————————————————————————
+    # 7) Auto‐size columns and rows in “Forecast” sheet
+    # ——————————————————————————————
+    # (A) Auto‐size each column by its max text length
+    for col_cells in sheet_fc.columns:
+        max_length = 0
+        col_letter = get_column_letter(col_cells[0].column)
+        for cell in col_cells:
+            if cell.value is not None:
+                length = len(str(cell.value))
+                if length > max_length:
+                    max_length = length
+        # Add a little extra padding (e.g. +2 characters)
+        sheet_fc.column_dimensions[col_letter].width = max_length + 2
+
+    # (B) Auto‐size each row by number of wrapped lines
+    for row_cells in sheet_fc.rows:
+        max_lines = 1
+        for cell in row_cells:
+            if cell.value is not None and isinstance(cell.value, str):
+                lines = str(cell.value).split("\n")
+                if len(lines) > max_lines:
+                    max_lines = len(lines)
+        sheet_fc.row_dimensions[row_cells[0].row].height = max_lines * 15
+
+
     # … you can keep adding all of your Heijunka grid/formula logic here, 
     #    e.g. columns H..Z with formulas referencing cells in "Proceso 1" …
     #    (just translate each f"=…" Excel formula into sheet_fc.cell(row=…, col=…).value = "…")
