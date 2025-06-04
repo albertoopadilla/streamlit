@@ -258,11 +258,22 @@ def run_forecast_pipeline(in_path: str, out_path: str):
     
     sheet_fc["AD3"].value  = W_opt
     sheet_fc["AC3"].value = "Número de FTE en el mes"
-    sheet_fc["AC3"].value = negrita
+    sheet_fc["AC3"].font = bold_font
     sheet_fc["AC4"].value = "Sobrecoste en el mes (euros)"
-    sheet_fc["AC3"].value = negrita
-    
-    
+    sheet_fc["AC3"].font = bold_font
+
+    from openpyxl.styles import NamedStyle
+
+    # create a named style for 2-decimal numbers
+    two_decimals = openpyxl.NamedStyle(name="two_decimals")
+    two_decimals.number_format = '0.00'
+    wb.add_named_style(two_decimals)
+
+    for col in ['A','B','C','D','I','J','K','L','M','N','O','P','Q','T','V','W','X','AA','AB', "AC", "AD"]:
+        for cell in sheet_fc[col]:
+            # skip the header row if you prefer:
+            if cell.row > 1:
+                cell.style = two_decimals
 
     # … you can keep adding all of your Heijunka grid/formula logic here, 
     #    e.g. columns H..Z with formulas referencing cells in "Proceso 1" …
