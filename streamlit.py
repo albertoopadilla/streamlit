@@ -319,10 +319,8 @@ def run_forecast_pipeline(in_path: str, out_path: str):
         for cell in col_cells:
             if cell.value is not None:
                 length = len(str(cell.value))
-                if length > max_length:
-                    max_length = length
         # Add a little extra padding (e.g. +2 characters)
-        sheet_fc.column_dimensions[col_letter].width = max_length + 2
+        sheet_fc.column_dimensions[col_letter].width = length
 
     # (B) Auto‐size each row by number of wrapped lines
     for row_cells in sheet_fc.rows:
