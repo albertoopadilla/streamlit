@@ -229,6 +229,12 @@ def run_forecast_pipeline(in_path: str, out_path: str):
         sheet_fc.cell(row=row, column=26).value = 18
         sheet_fc.cell(row=row, column=27).value = f"=IF(X{row}>0,X{row}*Y{row},-1*X{row}*Z{row})"
 
+    sheet_fc["AD4"].value = "=SUM(AA2:AA31)"
+
+    wb = openpyxl.load_workbook(filename=out_path)
+    ws = wb["Proceso 1"]
+    
+
     # … you can keep adding all of your Heijunka grid/formula logic here, 
     #    e.g. columns H..Z with formulas referencing cells in "Proceso 1" …
     #    (just translate each f"=…" Excel formula into sheet_fc.cell(row=…, col=…).value = "…")
