@@ -238,13 +238,30 @@ def run_forecast_pipeline(in_path: str, out_path: str):
     H3= ws["H3"].value
     R, S   = 25.0, 18.0
     avail = H2 - (H3 / 60.0)
-    J = df_final["Demanda"].values / productividad
+    J = df_final["Demanda"].values / prod
 
     def total_cost(W: float) -> float:
         X  = J - W * avail
         # piecewise cost
         AA = np.where(X > 0, X * R, -X * S)
         return AA.sum()
+
+    Ws = np.arange(0, 5001, 1)      # try W=0.0,0.1,0.2,...,50.0
+    costs = np.array([total_cost(w) for w in Ws])
+    idx   = costs.argmin()
+    
+    W_opt    = Ws[idx]
+    min_cost = costs[idx]
+    
+    print(f"Optimal staff (W) = {W_opt:.2f}")
+    print(f"Minimum total cost = {min_cost:.2f}")
+    
+    sheet_fc["AD3"].value  = W_opt
+    sheet_fc["AC3"].value = "Número de FTE en el mes"
+    sheet_fc["AC3"].value = negrita
+    sheet_fc["AC4"].value = "Sobrecoste en el mes (euros)"
+    sheet_fc["AC3"].value = negrita
+    
     
 
     # … you can keep adding all of your Heijunka grid/formula logic here, 
