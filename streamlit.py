@@ -262,13 +262,36 @@ def run_forecast_pipeline(in_path: str, out_path: str):
     sheet_fc["AC4"].value = "Sobrecoste en el mes (euros)"
     sheet_fc["AC3"].font = bold_font
 
-    for row in sheet_fc.iter_rows(
-            min_row=2,
-            max_row=sheet_fc.max_row,
-            min_col=1,
-            max_col=sheet_fc.max_column):
+    def _is_formula(cell):
+        """
+        Returns True if the cell holds an Excel formula string (i.e. its value is a str starting with '=').
+        """
+        return isinstance(cell.value, str) and cell.value.startswith("=")
+    
+    # 2) Loop over all rows, skip the header row (row 1)
+    for row in sheet_fc.iter_rows(min_row=2, max_row=sheet_fc.max_row, 
+                                  min_col=2, max_col=sheet_fc.max_column):
         for cell in row:
-            if isinstance(cell.value, (int, float)):
+            val = cell.value
+    
+            # (a) If it’s blank or None, do nothing
+            if val is None:
+                continue
+    
+            # (b) If it’s a formula (starts with "="), just apply two‐decimal number_format
+            if _is_formula(cell):
+                cell.number_format = "0.00"
+                continue
+    
+            # (c) Otherwise, try to coerce into float (e.g. "123.456" or numeric)
+            try:
+                num = float(val)
+            except Exception:
+                # couldn’t parse as float → leave as-is (e.g. a text field, or something non-numeric)
+                continue
+            else:
+                # we have a numeric value; round it and re-assign
+                cell.value = round(num, 2)
                 cell.number_format = "0.00"
 
     # … you can keep adding all of your Heijunka grid/formula logic here, 
