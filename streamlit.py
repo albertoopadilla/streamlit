@@ -354,7 +354,7 @@ st.title("Global Lean Forecast (Streamlit Edition)")
 st.markdown(
     """
     Upload your `GLOBAL_LEAN_1_copia.xlsx`, let Streamlit run the entire Python pipeline 
-    (XGBoost, ARIMA, Monte Carlo, Heijunka formulas, etc.), and then download the updated Excel.
+    (XGBoost, ARIMA, Monte Carlo, etc.), and then download the updated Excel.
     """
 )
 
