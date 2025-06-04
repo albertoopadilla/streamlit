@@ -186,10 +186,48 @@ def run_forecast_pipeline(in_path: str, out_path: str):
     sheet_fc["T1"].font = bold_font
 
     for r in range(2, 2 + len(df_final)):
-        sheet_fc.cell(row=r, column=4).value = f"=IF(C{row} = 0, B{row}, C{row})"
+        sheet_fc.cell(row=r, column=4).value = f"=IF(C{r} = 0, B{r}, C{r})"
         sheet_fc.cell(row=r, column=5).value = f"='Proceso 1'!$H$7"
         sheet_fc.cell(row=r, column=6).value = f"='Proceso 1'!$H$4"
         sheet_fc.cell(row=r, column=7).value = f"='Proceso 1'!$H$6"
+        sheet_fc.cell(row=r, column=10).value = f"=D{r} / F{r}"
+        sheet_fc.cell(row=r, column=11).value = f"=J{r}/('Proceso 1'!$H$2-('Proceso 1'!$H$3/60))"
+        sheet_fc.cell(row=r, column=11).font = bold_font
+        sheet_fc.cell(row=r, column=12).value = f"=D{r} / G{r}"
+        sheet_fc.cell(row=r, column=13).value = f"=L{r}/('Proceso 1'!$H$2-('Proceso 1'!$H$3/60))"
+        sheet_fc.cell(row=r, column=14).value = f"=J{r} - L{r}"
+        sheet_fc.cell(row=r, column=15).value = f"=K{r} - M{r}"
+        sheet_fc.cell(row=r, column=16).value =  f"=J{r}/(E{r}*('Proceso 1'!$H$2-('Proceso 1'!$H$3/60)))"
+        sheet_fc.cell(row=r, column=16).font = bold_font
+        sheet_fc.cell(row=r, column=17).value = f"=J{r} - (E{r}*('Proceso 1'!$H$2-('Proceso 1'!$H$3/60)))"
+        sheet_fc.cell(row=r, column=18).value = 25
+        sheet_fc.cell(row=r, column=19).value = 18
+        sheet_fc.cell(row=r, column=20).value = f"=IF(Q{r}>0,Q{r}*R{r},-1*Q{r}*S{r})"
+        sheet_fc.cell(row=r, column=20).font = bold_font
+
+    sheet_fc["V1"].value = "Heijunka 2"
+    sheet_fc["V1"].font = bold_font
+    sheet_fc["W1"].value = "Número de FTE propuesto"
+    sheet_fc["W1"].font = bold_font
+    sheet_fc["X1"].value = "Exceso/Falta de Horas (horas)"
+    sheet_fc["X1"].font = bold_font
+    sheet_fc["Y1"].value = "Coste hora extra (euros)"
+    sheet_fc["Y1"].font = bold_font
+    sheet_fc["Z1"].value = "Coste hora ociosa (euros)"
+    sheet_fc["Z1"].font = bold_font
+    sheet_fc["AA1"].value = "Coste ineficiente (euros)"
+    sheet_fc["AA1"].font = bold_font
+    sheet_fc["AB1"].value = "Coste total (euros)"
+    sheet_fc["AB1"].font = bold_font
+
+    sheet_fc = ["AD3"] = 1
+
+    for row in range(2, 2 + len(df_final)):
+    sheet_fc.cell(row = row, column = 23).value = f"=$AD$3"
+    sheet_fc.cell(row=row, column=24).value = f"=J{row} - (W{row}*('Proceso 1'!$H$2-('Proceso 1'!$H$3/60)))"
+    sheet_fc.cell(row=row, column=25).value = 25
+    sheet_fc.cell(row=row, column=26).value = 18
+    sheet_fc.cell(row=row, column=27).value = f"=IF(X{row}>0,X{row}*Y{row},-1*X{row}*Z{row})"
 
     # … you can keep adding all of your Heijunka grid/formula logic here, 
     #    e.g. columns H..Z with formulas referencing cells in "Proceso 1" …
