@@ -231,6 +231,7 @@ def run_forecast_pipeline(in_path: str, out_path: str):
         sheet_fc.cell(row=row, column=27).value = f"=IF(X{row}>0,X{row}*Y{row},-1*X{row}*Z{row})"
 
     sheet_fc["AD4"].value = "=SUM(AA2:AA31)"
+    sheet_fc["AD4"].font = bold_font
 
     wb = openpyxl.load_workbook(filename=out_path)
     ws = wb["Proceso 1"]
@@ -258,10 +259,11 @@ def run_forecast_pipeline(in_path: str, out_path: str):
     print(f"Minimum total cost = {min_cost:.2f}")
     
     sheet_fc["AD3"].value  = W_opt
+    sheet_fc["AD3"].font = bold_font
     sheet_fc["AC3"].value = "Número de FTE en el mes"
     sheet_fc["AC3"].font = bold_font
     sheet_fc["AC4"].value = "Sobrecoste en el mes (euros)"
-    sheet_fc["AC3"].font = bold_font
+    sheet_fc["AC4"].font = bold_font
 
     def _is_formula(cell):
         """
@@ -298,7 +300,7 @@ def run_forecast_pipeline(in_path: str, out_path: str):
     last_row = 1 + len(df_final)
 
     pink_fill   = openpyxl.styles.PatternFill(start_color="FFFF00", end_color="FFFF00", fill_type="solid")
-    blue_fill   = openpyxl.styles.PatternFill(start_color="305EF0", end_color="305EF0", fill_type="solid")
+    blue_fill   = openpyxl.styles.PatternFill(start_color="5379F3", end_color="5379F3", fill_type="solid")
 
     for r in range(2, last_row + 1):
         # Columns I (col 9) through T (col 20) → pink
