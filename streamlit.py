@@ -233,6 +233,18 @@ def run_forecast_pipeline(in_path: str, out_path: str):
 
     wb = openpyxl.load_workbook(filename=out_path)
     ws = wb["Proceso 1"]
+
+    H2= ws["H2"].value    # e.g. 8
+    H3= ws["H3"].value
+    R, S   = 25.0, 18.0
+    avail = H2 - (H3 / 60.0)
+    J = df_final["Demanda"].values / productividad
+
+    def total_cost(W: float) -> float:
+        X  = J - W * avail
+        # piecewise cost
+        AA = np.where(X > 0, X * R, -X * S)
+        return AA.sum()
     
 
     # … you can keep adding all of your Heijunka grid/formula logic here, 
