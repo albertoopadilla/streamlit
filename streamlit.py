@@ -160,35 +160,36 @@ def run_forecast_pipeline(in_path: str, out_path: str):
     sheet_fc["E1"].value = "Número de FTE actuales";      sheet_fc["E1"].font = bold_font
     sheet_fc["F1"].value = "Productividad";               sheet_fc["F1"].font = bold_font
     sheet_fc["G1"].value = "Productividad objetivo";      sheet_fc["G1"].font = bold_font
-    sheet_fc["I1"] = "Heijunka 1"
+    sheet_fc["I1"].value = "Heijunka 1"
     sheet_fc["I1"].font = bold_font
-    sheet_fc["J1"] = "Horas necesarias"
+    sheet_fc["J1"].value = "Horas necesarias"
     sheet_fc["J1"].font = bold_font
-    sheet_fc["K1"] = "FTE necesarias"
+    sheet_fc["K1"].value = "FTE necesarias"
     sheet_fc["K1"].font = bold_font
-    sheet_fc["L1"] = "Horas Objetivo"
+    sheet_fc["L1"].value = "Horas Objetivo"
     sheet_fc["L1"].font = bold_font
-    sheet_fc["M1"] = "FTE objetivos"
+    sheet_fc["M1"].value = "FTE objetivos"
     sheet_fc["M1"].font = bold_font
-    sheet_fc["N1"] = "Diferencia Horas"
+    sheet_fc["N1"].value = "Diferencia Horas"
     sheet_fc["N1"].font = bold_font
-    sheet_fc["O1"] = "Diferencia FTE"
+    sheet_fc["O1"].value = "Diferencia FTE"
     sheet_fc["O1"].font = bold_font
-    sheet_fc["P1"] = "Ocupación (Porcentaje)"
+    sheet_fc["P1"].value = "Ocupación (Porcentaje)"
     sheet_fc["P1"].font = bold_font
-    sheet_fc["Q1"] = "Exceso/Falta de Horas (horas)"
+    sheet_fc["Q1"].value = "Exceso/Falta de Horas (horas)"
     sheet_fc["Q1"].font = bold_font
-    sheet_fc["R1"] = "Coste hora extra (euros)"
+    sheet_fc["R1"].value = "Coste hora extra (euros)"
     sheet_fc["R1"].font = bold_font
-    sheet_fc["S1"] = "Coste hora ociosa (euros)"
+    sheet_fc["S1"].value = "Coste hora ociosa (euros)"
     sheet_fc["S1"].font = bold_font
-    sheet_fc["T1"] = "Coste ineficiente (euros)"
+    sheet_fc["T1"].value = "Coste ineficiente (euros)"
     sheet_fc["T1"].font = bold_font
 
     for r in range(2, 2 + len(df_final)):
-        sheet_fc.cell(row=r, column=5).value = trabajadores
-        sheet_fc.cell(row=r, column=6).value = prod
-        sheet_fc.cell(row=r, column=7).value = prod_obj
+        sheet_fc.cell(row=r, column=4).value = f"=IF(C{row} = 0, B{row}, C{row})"
+        sheet_fc.cell(row=r, column=5).value = f"='Proceso 1'!$H$7"
+        sheet_fc.cell(row=r, column=6).value = f"='Proceso 1'!$H$4"
+        sheet_fc.cell(row=r, column=7).value = f"='Proceso 1'!$H$6"
 
     # … you can keep adding all of your Heijunka grid/formula logic here, 
     #    e.g. columns H..Z with formulas referencing cells in "Proceso 1" …
