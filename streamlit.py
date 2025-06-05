@@ -353,11 +353,11 @@ def run_forecast_pipeline(in_path: str, out_path: str):
 st.title("Herramienta Heijunka Global Lean")
 st.markdown("""
             Bienvenido a la Herramienta Heijunka de Global Lean, donde podra obtener una previsión de la demanda para los proximos 30 días con datos históricos.
-            Para ello, siga las siguientes instrucciones:
-            1: Descargue la plantilla excel 
-            2: Rellene el excel con sus datos, siguiendo las instrucciones indicadas en la página de "Instrucciones" del excel
-            3: Introduzca el excel en el recuadro de debajo y haga click en el boton para empezar la previsión
-            4: Descargue el excel y ya tendrá su forecast.
+            Para ello, siga las siguientes instrucciones: \n
+            1. Descargue la plantilla excel \n
+            2. Rellene el excel con sus datos, siguiendo las instrucciones indicadas en la página de "Instrucciones" del excel \n
+            3. Introduzca el excel en el recuadro de debajo y haga click en el boton para empezar la previsión \n
+            4. Descargue el excel y ya tendrá su forecast. \n
             """)
 
 RUTA_PLANTILLA = Path(__file__).parent / "assets" / "plantilla.xlsx"
