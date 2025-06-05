@@ -375,18 +375,18 @@ st.download_button(
 
 st.markdown(
     """
-    Upload your `GLOBAL_LEAN_1_copia.xlsx`, let Streamlit run the entire Python pipeline 
-    (XGBoost, ARIMA, Monte Carlo, etc.), and then download the updated Excel.
+    Introduzca aqui el excel, se ejecutara el archivo Python 
+    (XGBoost, ARIMA, Monte Carlo, etc.), y después podrá descargar su excel terminado.
     """
 )
 
 uploaded_file = st.file_uploader("1) Upload your Excel (.xlsx)", type=["xlsx"])
 if uploaded_file:
-    st.write(f"Selected File: **{uploaded_file.name}**")
+    st.write(f"Elija el archivo: **{uploaded_file.name}**")
 
     # When the user clicks “Run Forecast,” save the uploaded contents to a temp file
-    if st.button("2) Run Forecast"):
-        with st.spinner("Running the full forecasting pipeline…"):
+    if st.button("2) Correr Forecast"):
+        with st.spinner("Corriendo el archivo python…"):
             # Save upload to a temporary location
             tmp_input = tempfile.NamedTemporaryFile(suffix=".xlsx", delete=False)
             tmp_input.write(uploaded_file.read())
