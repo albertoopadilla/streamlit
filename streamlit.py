@@ -376,7 +376,7 @@ st.download_button(
 st.markdown(
     """
     Introduzca aqui el excel, se ejecutara el archivo Python 
-    (XGBoost, ARIMA, Monte Carlo, etc.), y después podrá descargar su excel terminado.
+    (XGBoost, ARIMA, Monte Carlo, etc.), y después podrá descargar su excel completo.
     """
 )
 
