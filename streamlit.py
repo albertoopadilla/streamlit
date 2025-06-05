@@ -380,7 +380,7 @@ st.markdown(
     """
 )
 
-uploaded_file = st.file_uploader("1) Upload your Excel (.xlsx)", type=["xlsx"])
+uploaded_file = st.file_uploader("1) Adjunte su excel (.xlsx)", type=["xlsx"])
 if uploaded_file:
     st.write(f"Elija el archivo: **{uploaded_file.name}**")
 
@@ -401,13 +401,13 @@ if uploaded_file:
             except Exception as e:
                 st.error(f"❌ Forecast pipeline failed:\n```\n{e}\n```")
             else:
-                st.success("✅ Forecast complete! Download below:")
+                st.success("✅ Previsión completada! Descargue debajo:")
                 # Read the output file into memory
                 with open(tmp_output_path, "rb") as f:
                     data = f.read()
                 # Provide a Streamlit download button
                 st.download_button(
-                    label="Download Forecasted Excel",
+                    label="Descargue Heijunka Excel",
                     data=data,
                     file_name="Forecast_Demanda.xlsx",
                     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
