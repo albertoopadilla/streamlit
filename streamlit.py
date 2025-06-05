@@ -350,7 +350,29 @@ def run_forecast_pipeline(in_path: str, out_path: str):
 # ——————————————————————————————
 # 3) Streamlit UI: file uploader + call pipeline + download butt
 # ——————————————————————————————
-st.title("Global Lean Forecast (Streamlit Edition)")
+st.title("Herramienta Heijunka Global Lean")
+st.markdown("""
+            Bienvenido a la Herramienta Heijunka de Global Lean, donde podra obtener una previsión de la demanda para los proximos 30 días con datos históricos.
+            Para ello, siga las siguientes instrucciones:
+            1: Descargue la plantilla excel 
+            2: Rellene el excel con sus datos, siguiendo las instrucciones indicadas en la página de "Instrucciones" del excel
+            3: Introduzca el excel en el recuadro de debajo y haga click en el boton para empezar la previsión
+            4: Descargue el excel y ya tendrá su forecast.
+            """)
+
+RUTA_PLANTILLA = Path(__file__).parent / "assets" / "plantilla.xlsx"
+
+# 2) Leo el archivo en modo binario
+with open(RUTA_PLANTILLA, "rb") as f:
+    plantilla_bytes = f.read()
+
+st.download_button(
+    label="📥 Descargar plantilla de Excel",
+    data=plantilla_bytes,
+    file_name="plantilla.xlsx",
+    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+)
+
 st.markdown(
     """
     Upload your `GLOBAL_LEAN_1_copia.xlsx`, let Streamlit run the entire Python pipeline 
