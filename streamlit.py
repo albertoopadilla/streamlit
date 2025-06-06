@@ -130,7 +130,7 @@ def run_forecast_pipeline(in_path: str, out_path: str):
     #print("Hello2")
     #model.fit(X_train, y_train)
     #print("Hello3")
-    xgb_model = xgb.XGBRegressor(n_estimators=100, max_depth=5, learning_rate=0.01, subsample=0.8)
+    xgb_model = xgb.XGBRegressor(n_estimators=200, max_depth=1, learning_rate=0.005, subsample=0.8)
     xgb_model.fit(X_train, y_train)
     # Forecast next 30 days
     last_date = df1["Date"].max()
