@@ -107,7 +107,7 @@ def run_forecast_pipeline(in_path: str, out_path: str):
     X_train, y_train = create_features(df1_train, label="Carga histórica")
     X_test,  y_test  = create_features(df1_test,  label="Carga histórica")
     
-    xgb1 = xgb.XGBRegressor(objective='reg:squarederror', random_state=42)
+    xgb_model = xgb.XGBRegressor(objective='reg:squarederror', random_state=42)
     param_grid = {
           'n_estimators': [50, 200, 500],
           'max_depth':    [1, 5, 10],
@@ -117,14 +117,14 @@ def run_forecast_pipeline(in_path: str, out_path: str):
   # 5. TimeSeriesSplit + GridSearchCV
     tscv = TimeSeriesSplit(n_splits=5)
     model = GridSearchCV(
-        estimator=xgb1,
+        estimator=xgb_model,
         param_grid=param_grid,
         cv=tscv,
         scoring='neg_mean_squared_error',
         verbose=False,
         n_jobs=-1
       )
-    xgb_model.fit(X_train, y_train)
+    model.fit(X_train, y_train)
     #xgb_model = xgb.XGBRegressor(n_estimators=100, max_depth=5, learning_rate=0.1, subsample=0.8)
     #xgb_model.fit(X_train, y_train)
     # Forecast next 30 days
@@ -132,7 +132,7 @@ def run_forecast_pipeline(in_path: str, out_path: str):
     future_dates = pd.date_range(start=last_date + pd.Timedelta(days=1), periods=30, freq="D")
     df_future = pd.DataFrame({"Date": future_dates})
     X_future = create_features(df_future)
-    preds_future = xgb_model.predict(X_future)
+    preds_future = model.predict(X_future)
 
     # ——————————————————————————————
     # 4) WRITE THE NEW "Forecast" SHEET into the same workbook object
