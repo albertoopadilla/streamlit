@@ -124,7 +124,7 @@ def run_forecast_pipeline(in_path: str, out_path: str):
         verbose=False,
         n_jobs=-1
       )
-    model.fit(X_train, y_train)
+    xgb_model.fit(X_train, y_train)
     #xgb_model = xgb.XGBRegressor(n_estimators=100, max_depth=5, learning_rate=0.1, subsample=0.8)
     #xgb_model.fit(X_train, y_train)
     # Forecast next 30 days
