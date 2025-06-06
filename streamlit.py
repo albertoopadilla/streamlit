@@ -115,7 +115,7 @@ def run_forecast_pipeline(in_path: str, out_path: str):
       }
 
   # 5. TimeSeriesSplit + GridSearchCV
-    tscv = sklearn.model_selection.TimeSeriesSplit(n_splits=5)
+    tscv = TimeSeriesSplit(n_splits=5)
     model = sklearn.model_selection.GridSearchCV(
         estimator=xgb1,
         param_grid=param_grid,
