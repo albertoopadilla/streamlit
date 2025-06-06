@@ -132,7 +132,7 @@ def run_forecast_pipeline(in_path: str, out_path: str):
     future_dates = pd.date_range(start=last_date + pd.Timedelta(days=1), periods=30, freq="D")
     df_future = pd.DataFrame({"Date": future_dates})
     X_future = create_features(df_future)
-    preds_future = model.predict(X_future)
+    preds_future = xgb_model.predict(X_future)
 
     # ——————————————————————————————
     # 4) WRITE THE NEW "Forecast" SHEET into the same workbook object
