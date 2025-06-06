@@ -106,9 +106,27 @@ def run_forecast_pipeline(in_path: str, out_path: str):
     # Train XGBoost on df1_train
     X_train, y_train = create_features(df1_train, label="Carga histórica")
     X_test,  y_test  = create_features(df1_test,  label="Carga histórica")
+    
+    xgb = xgb.XGBRegressor(objective='reg:squarederror', random_state=42)
+    param_grid = {
+          'n_estimators': [50, 200, 500],
+          'max_depth':    [1, 5, 10],
+          'learning_rate':[0.005, 0.05, 0.15]
+      }
 
-    xgb_model = xgb.XGBRegressor(n_estimators=100, max_depth=5, learning_rate=0.1, subsample=0.8)
-    xgb_model.fit(X_train, y_train)
+  # 5. TimeSeriesSplit + GridSearchCV
+    tscv = sklearn.model_selection.TimeSeriesSplit(n_splits=5)
+    model = sklearn.model_selection.GridSearchCV(
+        estimator=xgb,
+        param_grid=param_grid,
+        cv=tscv,
+        scoring='neg_mean_squared_error',
+        verbose=False,
+        n_jobs=-1
+      )
+    model.fit(X_train, y_train)
+    #xgb_model = xgb.XGBRegressor(n_estimators=100, max_depth=5, learning_rate=0.1, subsample=0.8)
+    #xgb_model.fit(X_train, y_train)
     # Forecast next 30 days
     last_date = df1["Date"].max()
     future_dates = pd.date_range(start=last_date + pd.Timedelta(days=1), periods=30, freq="D")
