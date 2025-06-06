@@ -107,7 +107,7 @@ def run_forecast_pipeline(in_path: str, out_path: str):
     X_train, y_train = create_features(df1_train, label="Carga histórica")
     X_test,  y_test  = create_features(df1_test,  label="Carga histórica")
     
-    xgb = xgb.XGBRegressor(objective='reg:squarederror', random_state=42)
+    xgb1 = xgb.XGBRegressor(objective='reg:squarederror', random_state=42)
     param_grid = {
           'n_estimators': [50, 200, 500],
           'max_depth':    [1, 5, 10],
@@ -117,7 +117,7 @@ def run_forecast_pipeline(in_path: str, out_path: str):
   # 5. TimeSeriesSplit + GridSearchCV
     tscv = sklearn.model_selection.TimeSeriesSplit(n_splits=5)
     model = sklearn.model_selection.GridSearchCV(
-        estimator=xgb,
+        estimator=xgb1,
         param_grid=param_grid,
         cv=tscv,
         scoring='neg_mean_squared_error',
