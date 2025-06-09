@@ -368,7 +368,35 @@ def run_forecast_pipeline(in_path: str, out_path: str):
 
         # Finally, save the updated workbook to out_path
         workbook.save(out_path)
+        
+    sheet_final = workbook.create_sheet(title=f"Heijunka 3")
+    bold_font = openpyxl.styles.Font(bold=True)
+    sheet_final["A1"].value = "Heijunka 3"
+    sheet_final["A1"].font = bold_font
+    sheet_final["B2"].value = "Proceso"
+    sheet_final["B2"].font = bold_font
+    sheet_final["C2"].value = "Número de FTE actuales"
+    sheet_final["C2"].font = bold_font
+    sheet_final["D2"].value = "Número de FTE propuesto"
+    sheet_final["D2"].font = bold_font
+    sheet_final["E2"].value = "Diferencia FTE"
+    sheet_final["E2"].font = bold_font
 
+    for i in range(1, valor + 1):
+        num = 0
+        sheet_final.cell(row=i + 2, column=2).value = f"Proceso {i}"
+        sheet_final.cell(row=i + 2, column=3).value = f"='Proceso {i}'!$H$7"
+        sheet_final.cell(row=i + 2, column=4).value = f"='Forecast {i}'!$AD$3"
+        sheet_final.cell(row=i + 2, column=5).value = f"='Forecast {i}'!$AD$3"
+        sheet_final.cell(row=i + 2, column=6).value = f"='Forecast {i}'!$AD$3 - 'Proceso {i}'!$H$7"
+        if i > num: 
+            num = i
+
+    sheet_final.cell(row=num + 2, column=6).value = f"=SUM(E3:E{num + 2})"
+    sheet_final.cell(row=num + 2, column=6).font = bold_font
+    sheet_final.cell(row=num + 2, column=6).fill = pink_fill
+
+    workbook.save(out_path)
 
 # ——————————————————————————————
 # 3) Streamlit UI: file uploader + call pipeline + download butt
@@ -378,8 +406,8 @@ st.markdown("""
             Bienvenido a la Herramienta Heijunka de Global Lean, donde podra obtener una previsión de la demanda para los proximos 30 días con datos históricos.
             Para ello, siga las siguientes instrucciones: \n
             1. Descargue la plantilla excel \n
-            2. Rellene el excel con sus datos, siguiendo las instrucciones indicadas en la página de "Instrucciones" del excel \n
-            3. Introduzca el excel en el recuadro de debajo y haga click en el boton para empezar la previsión \n
+            2. Rellene el excel con sus datos, siguiendo las instrucciones indicadas en la hoja de "Instrucciones" \n
+            3. Introduzca el archivo en el recuadro de debajo y haga click en el boton para empezar la previsión \n
             4. Descargue el excel y ya tendrá su forecast. \n
             """)
 
