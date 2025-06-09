@@ -387,14 +387,13 @@ def run_forecast_pipeline(in_path: str, out_path: str):
         sheet_final.cell(row=i + 2, column=2).value = f"Proceso {i}"
         sheet_final.cell(row=i + 2, column=3).value = f"='Proceso {i}'!$H$7"
         sheet_final.cell(row=i + 2, column=4).value = f"='Forecast {i}'!$AD$3"
-        sheet_final.cell(row=i + 2, column=5).value = f"='Forecast {i}'!$AD$3"
-        sheet_final.cell(row=i + 2, column=6).value = f"='Forecast {i}'!$AD$3 - 'Proceso {i}'!$H$7"
+        sheet_final.cell(row=i + 2, column=5).value = f"=Forecast {i}'!$AD$3 - 'Proceso {i}'!$H$7"
         if i > num: 
             num = i
 
-    sheet_final.cell(row=num + 2, column=6).value = f"=SUM(E3:E{num + 2})"
-    sheet_final.cell(row=num + 2, column=6).font = bold_font
-    sheet_final.cell(row=num + 2, column=6).fill = pink_fill
+    sheet_final.cell(row=num + 3, column=5).value = f"=SUM(E3:E{num + 2})"
+    sheet_final.cell(row=num + 3, column=5).font = bold_font
+    sheet_final.cell(row=num + 3, column=5).fill = pink_fill
 
     workbook.save(out_path)
 
