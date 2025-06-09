@@ -257,7 +257,7 @@ def run_forecast_pipeline(in_path: str, out_path: str):
         sheet_fc["AD4"].value = "=SUM(AA2:AA31)"
         sheet_fc["AD4"].font = bold_font
 
-        ws = wb[f"Proceso {i}"]
+        ws = workbook[f"Proceso {i}"]
 
         H2= ws["H2"].value    # e.g. 8
         H3= ws["H3"].value
@@ -367,9 +367,9 @@ def run_forecast_pipeline(in_path: str, out_path: str):
         #    (just translate each f"=…" Excel formula into sheet_fc.cell(row=…, col=…).value = "…")
 
         # Finally, save the updated workbook to out_path
-        workbook.save(out_path)
+        #workbook.save(out_path)
         
-    sheet_final = workbook.create_sheet(title=f"Heijunka 3")
+    sheet_final = workbook.create_sheet(title="Heijunka 3")
     bold_font = openpyxl.styles.Font(bold=True)
     sheet_final["A1"].value = "Heijunka 3"
     sheet_final["A1"].font = bold_font
