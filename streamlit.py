@@ -387,7 +387,7 @@ def run_forecast_pipeline(in_path: str, out_path: str):
         sheet_final.cell(row=i + 2, column=2).value = f"Proceso {i}"
         sheet_final.cell(row=i + 2, column=3).value = f"='Proceso {i}'!$H$7"
         sheet_final.cell(row=i + 2, column=4).value = f"='Forecast {i}'!$AD$3"
-        sheet_final.cell(row=i + 2, column=5).value = f"=Forecast {i}'!$AD$3 - 'Proceso {i}'!$H$7"
+        sheet_final.cell(row=i + 2, column=5).value = f"='Forecast {i}'!$AD$3-'Proceso {i}'!$H$7"
         if i > num: 
             num = i
 
