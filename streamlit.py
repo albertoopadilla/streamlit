@@ -39,6 +39,7 @@ def run_forecast_pipeline(in_path: str, out_path: str):
     """
     # Load the workbook
     workbook = openpyxl.load_workbook(in_path)
+    wb = openpyxl.load_workbook(filename=in_path)
     sheet_ins = workbook["Instrucciones"]
     valor = sheet_ins["C2"].value
 
@@ -256,7 +257,6 @@ def run_forecast_pipeline(in_path: str, out_path: str):
         sheet_fc["AD4"].value = "=SUM(AA2:AA31)"
         sheet_fc["AD4"].font = bold_font
 
-        wb = openpyxl.load_workbook(filename=in_path)
         ws = wb[f"Proceso {i}"]
 
         H2= ws["H2"].value    # e.g. 8
